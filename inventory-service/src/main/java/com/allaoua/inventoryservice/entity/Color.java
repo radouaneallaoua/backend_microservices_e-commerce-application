@@ -19,8 +19,9 @@ public class Color {
     private Long id;
     private String color;
 
-    @OneToMany(mappedBy = "color")
-    private List<ProductColor> colors = new ArrayList<>();
+    @ManyToMany()
+    @JoinTable( name = "product_colors",joinColumns = @JoinColumn(name = "color_id"),inverseJoinColumns = @JoinColumn(name = "product_id"))
+    private List<Product> products = new ArrayList<>();
 
     public ColorResponseDto toDto() {
         return ColorResponseDto.builder()

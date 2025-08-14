@@ -19,8 +19,9 @@ public class Size {
     private Long id;
     private String label;
 
-    @OneToMany(mappedBy = "size")
-    private List<ProductSize> productSizes;
+    @ManyToMany()
+    @JoinTable( name = "product_sizes",joinColumns = @JoinColumn(name = "size_id"),inverseJoinColumns = @JoinColumn(name = "product_id"))
+    private List<Product> products;
 
     public SizeResponseDto toDto() {
         return SizeResponseDto.builder()

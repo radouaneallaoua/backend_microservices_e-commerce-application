@@ -19,7 +19,7 @@ public class Role {
     private Long id;
     private String roleName;
 
-    @OneToMany(mappedBy = "role")
+    @ManyToMany(fetch = FetchType.LAZY)
     private List<User> users;
 
     public RoleResponseDto toDto() {

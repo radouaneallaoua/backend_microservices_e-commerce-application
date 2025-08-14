@@ -7,6 +7,7 @@ import com.allaoua.inventoryservice.dto.ProductResponseDto;
 import com.allaoua.inventoryservice.entity.*;
 import com.allaoua.inventoryservice.exception.*;
 import com.allaoua.inventoryservice.repository.*;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -29,20 +30,16 @@ public class ProductService {
     final private ProductRepository productRepository;
     final private CategoryRepository categoryRepository;
     final private BrandRepository brandRepository;
-    private final ProductColorRepository productColorRepository;
     private final ColorRepository colorRepository;
     private final SizeRepository sizeRepository;
-    private final ProductSizeRepository productSizeRepository;
     private final ProductImageRepository productImageRepository;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, BrandRepository brandRepository, ProductColorRepository productColorRepository, ColorRepository colorRepository, SizeRepository sizeRepository, ProductSizeRepository productSizeRepository, ProductImageRepository productImageRepository) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, BrandRepository brandRepository, ColorRepository colorRepository, SizeRepository sizeRepository,  ProductImageRepository productImageRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.brandRepository = brandRepository;
-        this.productColorRepository = productColorRepository;
         this.colorRepository = colorRepository;
         this.sizeRepository = sizeRepository;
-        this.productSizeRepository = productSizeRepository;
         this.productImageRepository = productImageRepository;
     }
 
@@ -51,9 +48,6 @@ public class ProductService {
     }
 
 
-    public ResponseEntity<List<ProductResponseDto>> getAllProductsWithCategoryId(Long categoryId) {
-        return ResponseEntity.ok(productRepository.findByCategoryId(categoryId).stream().map(Product::toDto).toList());
-    }
 
     public ResponseEntity<List<ProductResponseDto>> getAllProductsWithCategoryIdAndPage(Long categoryId, int pageNumber,int pageSize) {
         return ResponseEntity.ok(productRepository.findByCategoryId(categoryId,Pageable.ofSize(pageSize).withPage(pageNumber)).stream().map(Product::toDto).toList());
@@ -63,58 +57,31 @@ public class ProductService {
         return ResponseEntity.ok(productRepository.findByPriceBetween(minPrice,maxPrice,Pageable.ofSize(pageSize).withPage(pageNumber)).stream().map(Product::toDto).toList());
     }
 
-    public ResponseEntity<List<ProductResponseDto>> getAllProductsWithCategoryIdAndPriceDesc(Long categoryId) {
-        return ResponseEntity.ok(productRepository.findByCategoryId(categoryId,Sort.by(Sort.Direction.DESC,"price")).stream().map(Product::toDto).toList());
+
+
+    public ResponseEntity<List<ProductResponseDto>> getAllProductsWithBrandId(Long brandId,int page,int size) {
+        return ResponseEntity.ok(productRepository.findByBrandId(brandId,PageRequest.of(page,size)).stream().map(Product::toDto).toList());
     }
 
-    public ResponseEntity<List<ProductResponseDto>> getAllProductsWithBrandId(Long brandId) {
-        return ResponseEntity.ok(productRepository.findByBrandId(brandId).stream().map(Product::toDto).toList());
-    }
 
-    public ResponseEntity<List<ProductResponseDto>> getAllProductsWithCategoryIdAndPriceAsc(Long categoryId) {
-        return ResponseEntity.ok(productRepository.findByCategoryId(categoryId,Sort.by(Sort.Direction.ASC,"price")).stream().map(Product::toDto).toList());
-    }
-
-    public ResponseEntity<List<ProductResponseDto>> getAllProductsByNameContaining(String name) {
-        return ResponseEntity.ok(productRepository.findByNameContainingIgnoreCase(name).stream().map(Product::toDto).toList());
+    public ResponseEntity<List<ProductResponseDto>> getAllProductsByNameContaining(String name,int page,int size) {
+        return ResponseEntity.ok(productRepository.findByNameContainingIgnoreCase(name,PageRequest.of(page,size)).stream().map(Product::toDto).toList());
     }
 
     public ResponseEntity<ProductResponseDto> saveProduct(ProductRequestDto productRequestDto) throws IOException {
-        Product product=Product.builder()
+        Product product= Product.builder()
                 .id(UUID.randomUUID().toString())
                 .name(productRequestDto.getName())
                 .description(productRequestDto.getDescription())
                 .price(productRequestDto.getPrice())
                 .oldPrice(productRequestDto.getOldPrice())
-                .brand(brandRepository.findById(productRequestDto.getBrandId()).orElseThrow(()-> new BrandNotFoundException("brand not found with id "+productRequestDto.getBrandId())))
-                .category(categoryRepository.findById(productRequestDto.getCategoryId()).orElseThrow(()-> new CategoryNotFoundException("category not found with id "+productRequestDto.getCategoryId())))
-                .build();
+                .sizes(sizeRepository.findAllById(productRequestDto.getSizesIds()))
+                .colors(colorRepository.findAllById(productRequestDto.getColorsIds()))
+                .brand(brandRepository.findById(productRequestDto.getBrandId()).orElseThrow(() -> new BrandNotFoundException("brand not found with id " + productRequestDto.getBrandId())))
+                .category(categoryRepository.findById(productRequestDto.getCategoryId()).orElseThrow(() -> new CategoryNotFoundException("category not found with id " + productRequestDto.getCategoryId())))
+                .quantity(productRequestDto.getQuantity()).build();
         Product savedProduct=productRepository.save(product);
 
-        List<ProductColor> productColors=new ArrayList<>();
-        if(productRequestDto.getColorsIds()!=null){
-            productRequestDto.getColorsIds().forEach(c->{
-                ProductColor productColor=ProductColor.builder()
-                        .color(colorRepository.findById(c).orElseThrow(()-> new ColorNotFoundException("color not found with id "+c)))
-                        .product(savedProduct)
-                        .productColorKey(ProductColorKey.builder().colorId(c).productId(savedProduct.getId()).build())
-                        .build();
-                ProductColor savedColor = productColorRepository.save(productColor);
-                productColors.add(savedColor);
-            });
-        }
-        List<ProductSize> productSizes=new ArrayList<>();
-        if(productRequestDto.getSizesIds()!=null){
-            productRequestDto.getSizesIds().forEach(s->{
-                ProductSize productSize=ProductSize.builder()
-                        .size(sizeRepository.findById(s).orElseThrow(()-> new SizeNotFoundException("size not found with id "+s)))
-                        .product(savedProduct)
-                        .productSizeKey(ProductSizeKey.builder().productId(savedProduct.getId()).sizeId(s).build())
-                        .build();
-                ProductSize savedSize = productSizeRepository.save(productSize);
-                productSizes.add(savedSize);
-            });
-        }
 
         Path path= Paths.get(System.getProperty("user.home"),"e-comm-final","products_images");
         if(!Files.exists(path)){
@@ -142,8 +109,6 @@ public class ProductService {
 
 
         savedProduct.setImages(productImages);
-        savedProduct.setColors(productColors);
-        savedProduct.setProductSizes(productSizes);
         return ResponseEntity.ok(productRepository.save(savedProduct).toDto());
     }
 
@@ -198,6 +163,8 @@ public class ProductService {
             Brand brand=brandRepository.findById(brandId).orElseThrow(()-> new BrandNotFoundException("brand not found with id "+brandId));
             product.setBrand(brand);
         }
+        product.setColors(colorRepository.findAllById(colorsIds));
+        product.setSizes(sizeRepository.findAllById(sizesIds));
         if(images!=null){
             product.getImages().forEach(pm->{
                 try {
@@ -206,50 +173,30 @@ public class ProductService {
                     throw new RuntimeException(e);
                 }
             });
-            List<ProductImage> productImages=new ArrayList<>();
-            images.forEach(img->{
-                String imageId=UUID.randomUUID().toString();
-                //String extension=c.getOriginalFilename().substring(c.getOriginalFilename().lastIndexOf("."));
-                Path imagePath=Paths.get(System.getProperty("user.home"),"e-comm-final","products_images",imageId+".webp");
-                try {
-                    Files.copy(img.getInputStream(),imagePath);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                ProductImage productImage= ProductImage.builder()
-                        .imageURL(imagePath.toUri().toString())
-                        .product(product)
-                        .build();
-                productImages.add(productImage);
-            });
-            product.setImages(productImages);
+
+            product.setImages(setProductImages(images,product));
         }
 
-        if(colorsIds!=null){
-
-            List<ProductColor> productColors=new ArrayList<>();
-            colorsIds.forEach(c->{
-                ProductColor productColor=ProductColor.builder()
-                        .color(colorRepository.findById(c).orElseThrow(()-> new ColorNotFoundException("color not found with id "+c)))
-                        .product(product)
-                        .build();
-                productColors.add(productColor);
-            });
-            product.setColors(productColors);
-
-
-        }
-        if(sizesIds!=null){
-            List<ProductSize> productSizes=new ArrayList<>();
-            sizesIds.forEach(s->{
-                ProductSize productSize=ProductSize.builder()
-                        .size(sizeRepository.findById(s).orElseThrow(()-> new SizeNotFoundException("size not found with id "+s)))
-                        .product(product)
-                        .build();
-                productSizes.add(productSize);
-            });
-            product.setProductSizes(productSizes);
-        }
         return ResponseEntity.ok(productRepository.save(product).toDto());
+    }
+
+    private List<ProductImage> setProductImages(List<MultipartFile> images,Product product) {
+        List<ProductImage> productImages=new ArrayList<>();
+        images.forEach(img->{
+            String imageId=UUID.randomUUID().toString();
+            //String extension=c.getOriginalFilename().substring(c.getOriginalFilename().lastIndexOf("."));
+            Path imagePath=Paths.get(System.getProperty("user.home"),"e-comm-final","products_images",imageId+".webp");
+            try {
+                Files.copy(img.getInputStream(),imagePath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            ProductImage productImage= ProductImage.builder()
+                    .imageURL(imagePath.toUri().toString())
+                    .product(product)
+                    .build();
+            productImages.add(productImage);
+        });
+        return productImages;
     }
 }

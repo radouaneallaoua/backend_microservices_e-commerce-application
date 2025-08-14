@@ -26,10 +26,7 @@ public class UserController {
     }
 
 
-    @GetMapping("/role/{roleId}")
-    public ResponseEntity<List<UserResponseDto>> getAllUsersWithRole(@PathVariable Long roleId) {
-        return userService.getAllUsersWithRoleId(roleId);
-    }
+
 
     @PostMapping("/authenticate")
     public ResponseEntity<UserResponseDto> getUserByEmailAndPassword(@RequestParam String email, @RequestParam String password) {

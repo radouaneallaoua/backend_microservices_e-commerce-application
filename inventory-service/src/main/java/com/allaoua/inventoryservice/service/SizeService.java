@@ -42,6 +42,7 @@ public class SizeService {
         if(size==null) {
             throw new SizeNotFoundException("size not found with id "+sizeId);
         }
+        size.setLabel(sizeRequestDto.getLabel());
         return ResponseEntity.ok(sizeRepository.save(size).toDto());
     }
 

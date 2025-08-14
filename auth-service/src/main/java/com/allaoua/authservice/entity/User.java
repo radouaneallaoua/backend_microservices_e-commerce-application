@@ -11,7 +11,7 @@ import java.util.List;
 @Entity
 @Getter @Setter  @AllArgsConstructor @NoArgsConstructor @Builder
 public class User {
-    @Id
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     @Column(nullable = false)
     private String username;
@@ -23,8 +23,8 @@ public class User {
     private String password;  //HACHAGE
     private String imageURL;
 
-    @ManyToOne
-    private Role role;
+    @ManyToMany(fetch = FetchType.EAGER)
+    private List<Role> roles;
 
     @OneToMany(mappedBy = "user")
     private List<Notification> notifications =new ArrayList<>();
@@ -39,7 +39,7 @@ public class User {
                 .username(username)
                 .email(email)
                 .notifications(notifications.stream().map(Notification::toDto).toList())
-                .role(role.toDto())
+                .roles(roles.stream().map(Role::toDto).toList())
                 .build();
     }
 

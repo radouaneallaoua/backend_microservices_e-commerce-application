@@ -14,7 +14,7 @@ public class UserResponseDto {
     private String address;
     private String password;
     private String imageURL;
-    private RoleResponseDto role;
+    private List<RoleResponseDto> roles;
     private List<NotificationResponseDto> notifications;
 
 }

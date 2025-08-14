@@ -79,4 +79,14 @@ public class AppExceptionHandler {
                 .build();
         return  new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(value = SizeNotFoundException.class)
+    public ResponseEntity<ErrorMessage> sizeNotFound(SizeNotFoundException e){
+        ErrorMessage errorMessage = ErrorMessage.builder()
+                .message(e.getMessage())
+                .code(404)
+                .timestamp(new Date())
+                .build();
+        return  new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
+    }
 }

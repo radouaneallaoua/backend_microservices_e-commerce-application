@@ -14,6 +14,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/categories")
+@CrossOrigin("*")
+
 public class CategoryController {
     
     private final CategoryService categoryService;
@@ -51,5 +53,7 @@ public class CategoryController {
     public ResponseEntity<byte[]> getCategoryImage(@PathVariable Long categoryId) throws IOException {
         return categoryService.getCategoryImage(categoryId);
     }
+
+
     
 }

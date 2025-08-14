@@ -35,9 +35,7 @@ public class UserService {
         return ResponseEntity.ok(userRepository.findAll().stream().map(User::toDto).toList());
     }
 
-    public ResponseEntity<List<UserResponseDto>> getAllUsersWithRoleId(Long roleId) {
-        return ResponseEntity.ok(userRepository.findByRoleId(roleId).stream().map(User::toDto).toList());
-    }
+
 
     public ResponseEntity<UserResponseDto> getUserByEmailAndPassword(String email, String password) {
         return ResponseEntity.ok(userRepository.findByEmailAndPassword(email, password).toDto());
@@ -56,7 +54,7 @@ public class UserService {
                 .id(UUID.randomUUID().toString())
                 .email(userRequestDto.getEmail())
                 .password(userRequestDto.getPassword())
-                .role(roleRepository.findById(1L).get())
+                .roles(List.of())
                 .address(userRequestDto.getAddress())
                 .notifications(new ArrayList<>())
                 .username(userRequestDto.getUsername())

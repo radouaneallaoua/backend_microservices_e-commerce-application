@@ -5,6 +5,7 @@ import com.allaoua.inventoryservice.dto.ProductResponseDto;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -14,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class Product {
-    @Id
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     private String name;
     private String description;
@@ -28,14 +29,16 @@ public class Product {
     @ManyToOne
     private Brand brand;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE)
-    private List<ProductColor> colors;
+    @ManyToMany()
+    @JoinTable( name = "product_colors",joinColumns = @JoinColumn(name = "product_id"),inverseJoinColumns = @JoinColumn(name = "color_id"))
+    private List<Color> colors=new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE)
-    private List<ProductSize> productSizes;
+    @ManyToMany()
+    @JoinTable( name = "product_sizes",joinColumns = @JoinColumn(name = "product_id"),inverseJoinColumns = @JoinColumn(name = "size_id"))
+    private List<Size> sizes=new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE)
-    private List<ProductImage> images;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<ProductImage> images=new ArrayList<>();
 
     public ProductResponseDto toDto() {
         return ProductResponseDto.builder()
@@ -47,9 +50,9 @@ public class Product {
                 .quantity(quantity)
                 .category(category.toDto())
                 .brand(brand.toDto())
-                .colors(colors!=null? colors.stream().map(ProductColor::toDto).toList():null)
-                .sizes(productSizes!=null? productSizes.stream().map(ProductSize::toDto).toList():null)
-                .images(images!=null? images.stream().map(ProductImage::toDto).toList():null)
+                .colors(colors.stream().map(Color::toDto).toList())
+                .sizes(sizes.stream().map(Size::toDto).toList())
+                .images(images.stream().map(ProductImage::toDto).toList())
                 .build();
     }
 

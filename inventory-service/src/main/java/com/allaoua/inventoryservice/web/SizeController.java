@@ -11,6 +11,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/sizes")
+@CrossOrigin
+
 public class SizeController {
 
     private final SizeService sizeService;

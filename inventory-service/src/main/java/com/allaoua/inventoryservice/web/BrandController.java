@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/brands")
+@CrossOrigin(value = "*",methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
 public class BrandController {
 
     private final BrandService brandService;
